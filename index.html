@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Interactive b=1 full-Fourier spectral maps and numerical snapshots.">
+<title>b=1 · Spectral map explorer</title>
+<style>
+  :root { color-scheme: light; --ink:#18232a; --muted:#62737b; --line:#dce3e4;
+          --paper:#f8faf9; --front:#be0000; --back:#708e99; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink);
+         font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  .shell { max-width:1280px; margin:auto; padding:30px 28px 34px; }
+  .eyebrow { margin:0 0 8px; color:var(--muted); font-size:11px; font-weight:700;
+             letter-spacing:.14em; text-transform:uppercase; }
+  h1 { margin:0; font-family:Georgia,"Times New Roman",serif; font-weight:500;
+       font-size:clamp(27px,3.4vw,42px); letter-spacing:-.025em; }
+  .intro { margin:10px 0 23px; max-width:790px; color:var(--muted);
+           font-size:14px; line-height:1.55; }
+  .controls { display:flex; flex-wrap:wrap; align-items:end; gap:18px;
+              padding:18px; background:white; border:1px solid var(--line);
+              border-radius:13px 13px 0 0; }
+  .control-label { display:block; margin:0 0 8px; color:var(--muted);
+                   font-size:11px; font-weight:700; letter-spacing:.10em;
+                   text-transform:uppercase; }
+  .columns { display:flex; flex-wrap:wrap; gap:7px; }
+  .column { border:1px solid var(--line); background:white; color:var(--ink);
+            border-radius:8px; padding:9px 12px; font:inherit; font-size:13px;
+            cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
+  .column:hover { background:#f3f6f6; border-color:#b9c8cc; }
+  .column[aria-pressed="true"] { background:#eaf0f2; border-color:var(--back);
+                                  box-shadow:inset 0 0 0 1px var(--back); }
+  select { min-width:242px; height:38px; border:1px solid var(--line); border-radius:8px;
+           background:white; padding:0 11px; color:var(--ink); font:inherit; font-size:13px; }
+  .metric { margin-left:auto; padding-bottom:2px; color:var(--muted);
+            font-family:Georgia,"Times New Roman",serif; font-size:13px;
+            white-space:nowrap; line-height:1.45; }
+  .viewer { position:relative; background:white; border:1px solid var(--line);
+            border-top:0; border-radius:0 0 13px 13px; min-height:760px; overflow:hidden; }
+  iframe { display:block; width:100%; height:760px; border:0; background:white; }
+  .loading { position:absolute; z-index:1; inset:0; display:grid; place-items:center;
+             pointer-events:none; color:var(--muted); background:white;
+             font-family:Georgia,"Times New Roman",serif; font-size:16px; }
+  .loading[hidden] { display:none; }
+  .below { display:flex; justify-content:space-between; gap:15px; align-items:center;
+           padding:13px 4px 0; color:var(--muted); font-size:12px; line-height:1.5; }
+  .below p { margin:0; }
+  .below a { color:#385a69; text-decoration:underline; text-underline-offset:3px;
+             white-space:nowrap; }
+  .swatch { display:inline-block; width:10px; height:10px; border-radius:2px;
+            vertical-align:-1px; margin:0 4px 0 8px; }
+  .swatch:first-child { margin-left:0; }
+  .swatch.front { background:var(--front); } .swatch.back { background:var(--back); }
+  @media(max-width:820px) {
+    .shell { padding:17px 12px 22px; }
+    .controls { gap:14px; padding:13px; }
+    .metric { margin-left:0; width:100%; }
+    .viewer { min-height:600px; }
+    iframe { height:600px; }
+    .below { display:block; }
+    .below a { display:inline-block; margin-top:8px; }
+  }
+</style>
+</head>
+<body>
+<main class="shell">
+  <p class="eyebrow">b = 1 · Full Fourier · Numerical snapshots</p>
+  <h1>Spectral map explorer</h1>
+  <p class="intro">Choose a checkpoint and panel. Drag inside a 3D panel to rotate it; the red and grey faces update to match the camera after each rotation.</p>
+  <div class="controls">
+    <div>
+      <span class="control-label">Column · σ̄₁</span>
+      <div class="columns" role="group" aria-label="Checkpoint">
+        <button class="column" data-state="start" type="button">Start · 11.32</button>
+        <button class="column" data-state="sigma11_60" type="button">11.60</button>
+        <button class="column" data-state="sigma12_00" type="button">12.00</button>
+        <button class="column" data-state="endpoint" type="button">4π endpoint</button>
+      </div>
+    </div>
+    <label>
+      <span class="control-label">Panel</span>
+      <select id="panel" aria-label="Panel">
+        <optgroup label="Spectral map">
+          <option value="top">Top · smallest-eigenvalue direction</option>
+          <option value="oblique">Oblique · optional view</option>
+          <option value="side">Side · horizontal</option>
+        </optgroup>
+        <optgroup label="Domain and boundary">
+          <option value="domain">Fundamental domain</option>
+          <option value="weight">Weight profile ρ / max ρ</option>
+        </optgroup>
+        <optgroup label="Fields and sheet">
+          <option value="u1">u₁</option>
+          <option value="u2">u₂</option>
+          <option value="logJ">log J</option>
+          <option value="one_sheet">One-sheet projection</option>
+          <option value="one_sheet_3d">One sheet in 3D</option>
+        </optgroup>
+      </select>
+    </label>
+    <div class="metric" id="metric" aria-live="polite"></div>
+  </div>
+  <div class="viewer">
+    <div class="loading" id="loading" role="status">Loading panel…</div>
+    <iframe id="figure" title="Interactive plot" loading="eager"></iframe>
+  </div>
+  <div class="below">
+    <p><span class="swatch front"></span>Camera-facing <span class="swatch back"></span>Camera-away &nbsp;·&nbsp; <span id="marker-info"></span> Endpoint side view displays the third coordinate ×64.</p>
+    <a id="open-panel" href="panels/start/top.html" target="_blank" rel="noopener">Open current panel alone ↗</a>
+  </div>
+</main>
+<script>
+const states = {"start":{"sigma":11.324606874718917,"eigenvalues":[0.4383080658086983,0.28092293331180834,0.2807690008794935]},"sigma11_60":{"sigma":11.60000000000007,"eigenvalues":[0.4817232411574428,0.40467618605535355,0.11360057278720344]},"sigma12_00":{"sigma":11.999999999999952,"eigenvalues":[0.5150242482925254,0.4383992304935737,0.046576521213900914]},"endpoint":{"sigma":12.566369104064567,"eigenvalues":[0.49999537237786307,0.49999537237786307,9.25524427390462e-06]}};
+const validPanels = new Set(["top", "oblique", "side", "domain", "weight", "u1", "u2", "logJ", "one_sheet", "one_sheet_3d"]);
+const buttons = Array.from(document.querySelectorAll('.column'));
+const selector = document.getElementById('panel');
+const figure = document.getElementById('figure');
+const metric = document.getElementById('metric');
+const loading = document.getElementById('loading');
+const openPanel = document.getElementById('open-panel');
+const markerInfo = document.getElementById('marker-info');
+const query = new URLSearchParams(location.search);
+let currentState = Object.hasOwn(states, query.get('state')) ? query.get('state') : 'start';
+let currentPanel = validPanels.has(query.get('panel')) ? query.get('panel') : 'top';
+function show(state, panel) {
+  currentState = state;
+  currentPanel = panel;
+  buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.state === state)));
+  selector.value = panel;
+  const source = `panels/${state}/${panel}.html`;
+  loading.hidden = false;
+  figure.title = `${state}: ${selector.selectedOptions[0].text}`;
+  figure.src = source;
+  openPanel.href = source;
+  const info = states[state];
+  metric.innerHTML = `σ̄₁ = ${info.sigma.toFixed(5)}<br>λ(Λ) = (${info.eigenvalues.map(x => x.toFixed(3)).join(', ')})`;
+  markerInfo.textContent = panel === 'weight' ? '' :
+    (state === 'endpoint' ? 'Black dots: half-period ramification points (J → 0). · ' :
+                            'Black dots: half-period reference positions (J > 0 here). · ');
+  const next = new URL(location.href);
+  next.searchParams.set('state', state);
+  next.searchParams.set('panel', panel);
+  history.replaceState(null, '', next);
+}
+buttons.forEach(button => button.addEventListener('click', () => show(button.dataset.state, currentPanel)));
+selector.addEventListener('change', () => show(currentState, selector.value));
+figure.addEventListener('load', () => { loading.hidden = true; });
+window.addEventListener('popstate', () => {
+  const q = new URLSearchParams(location.search);
+  show(Object.hasOwn(states, q.get('state')) ? q.get('state') : 'start',
+       validPanels.has(q.get('panel')) ? q.get('panel') : 'top');
+});
+show(currentState, currentPanel);
+</script>
+</body>
+</html>

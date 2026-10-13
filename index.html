@@ -67,7 +67,7 @@
 <main class="shell">
   <p class="eyebrow">b = 1 · Full Fourier · Numerical snapshots</p>
   <h1>Spectral map explorer</h1>
-  <p class="intro">Choose a checkpoint and panel. Drag inside a 3D panel to rotate it; the red and grey faces update to match the camera after each rotation.</p>
+  <p class="intro">Choose a checkpoint and panel. Drag inside a 3D panel to rotate it; the red and grey faces update to match the camera. The lower-left readout shows X, Y, Z rotation from the initial view. Use “Copy view” to share the exact camera.</p>
   <div class="controls">
     <div>
       <span class="control-label">Column · σ̄₁</span>
@@ -84,7 +84,7 @@
         <optgroup label="Spectral map">
           <option value="top">Top · smallest-eigenvalue direction</option>
           <option value="oblique">Oblique · optional view</option>
-          <option value="side">Side · horizontal</option>
+          <option value="side">Side · slight tilt</option>
         </optgroup>
         <optgroup label="Domain and boundary">
           <option value="domain">Fundamental domain</option>
@@ -103,7 +103,7 @@
   </div>
   <div class="viewer">
     <div class="loading" id="loading" role="status">Loading panel…</div>
-    <iframe id="figure" title="Interactive plot" loading="eager"></iframe>
+    <iframe id="figure" title="Interactive plot" loading="eager" allow="clipboard-write"></iframe>
   </div>
   <div class="below">
     <p><span class="swatch front"></span>Camera-facing <span class="swatch back"></span>Camera-away &nbsp;·&nbsp; <span id="marker-info"></span> Endpoint side view displays the third coordinate ×64.</p>
